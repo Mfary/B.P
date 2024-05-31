@@ -8,7 +8,7 @@ import requests
 
 RECEIVER_IP = '192.168.110.71'
 DATA_LENGTH = 1000
-PERIOD = 10
+PERIOD = 1
 PREFIX_SIZE = getsizeof(bytes(f"{datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp():.3f}#", 'ascii'))
 FILE_NAME = "data_sender.csv"
 

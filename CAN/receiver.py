@@ -1,11 +1,7 @@
-import can, os, struct
+import can
 from datetime import datetime, timezone
-from dotenv import load_dotenv
 
-
-load_dotenv()
-
-FILE_NAME = os.environ['FILE_NAME']
+FILE_NAME = "data_receiver_90.csv"
 
 def rcv(bus):
     while True:
@@ -13,13 +9,19 @@ def rcv(bus):
         receive_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()
         if data is None:
             continue
+        (sender, seq, ack) = map(int, data.data.decode("ascii").split(","))
+        if (ack == 1):
+            continue
+
+        bus.send(can.Message(arbitration_id=0, data=f'{sender},{seq},1'.encode('ascii'), is_extended_id=False))
+
         print(f"### Received at {receive_time:.3f}")
-        send_time = struct.unpack("d", data.data)[0]
+
         with open(FILE_NAME, 'a') as file:
-            print(f'{receive_time - send_time:.3f},{send_time:.3f},{receive_time:.3f}', file=file)
+            print(f'{sender},{seq},{receive_time:.3f}', file=file)
 
 with open(FILE_NAME, 'w') as file:
-    print('delay,send_time,receive_time', file=file)
+    print('sender_id,sequence,receive_time', file=file)
 
 bustype = 'socketcan'
 channel = 'can0'
@@ -30,3 +32,4 @@ try:
 except KeyboardInterrupt:
     print('### Stopping gracefully...')
     bus.shutdown()
+

@@ -4,7 +4,7 @@ import time, struct
 
 
 HOST = "192.168.110.71"
-PERIOD = 10
+PERIOD = 1
 FILE_NAME = "data_sender.csv"
 
 with open(FILE_NAME, 'w') as file:
@@ -12,7 +12,7 @@ with open(FILE_NAME, 'w') as file:
 
 try:
     while True:
-        client = ModbusClient(host=HOST, port=12345, timeout=5)
+        client = ModbusClient(host=HOST, port=502, timeout=5)
         send_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()
         client.write_multiple_registers(0, struct.pack('d', send_time))
         ack_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()

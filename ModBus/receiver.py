@@ -19,7 +19,7 @@ class CustomDataBank(DataBank):
 with open(FILE_NAME, 'w') as file:
     print('delay,send_time,receive_time', file=file)
 
-server = ModbusServer("0.0.0.0", 12345, no_block=True, data_bank=CustomDataBank())
+server = ModbusServer("0.0.0.0", 502, no_block=True, data_bank=CustomDataBank())
 server.start()
 print(f"### Server started")
 

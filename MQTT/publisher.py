@@ -15,7 +15,8 @@ TOPIC = "topic"
 DATA_LENGTH = 1000
 PUBLISH_PERIOD = 1
 PREFIX_SIZE = getsizeof(bytes(f"{datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp():.3f}#", 'ascii'))
-FILE_NAME = "data_sender.csv" 
+FILE_NAME = "data_sender.csv"
+QOS = 0
 
 client = mqtt.Client()
 client.on_message = on_message
@@ -30,7 +31,7 @@ try:
         N = DATA_LENGTH - PREFIX_SIZE
         random_string = ''.join(random.choices(ascii_uppercase, k=N))
         send_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()
-        client.publish(TOPIC, f"{send_time:.3f}#{random_string}")
+        client.publish(TOPIC, f"{send_time:.3f}#{random_string}", qos=QOS)
         ack_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()
         print(f'published on: {send_time:.3f}')
         with open(FILE_NAME, 'a') as file:

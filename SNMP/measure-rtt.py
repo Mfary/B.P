@@ -1,6 +1,6 @@
 from pysnmp.hlapi import *
 from datetime import datetime, timezone
-import os, time
+import time
 
 
 
@@ -31,15 +31,15 @@ def getsnmp(host, oid):
 
 
 FILE_NAME = "data_sender.csv"
-DEVICE_IP = "192.168.110.71"
-PERIOD = 10
+RECEIVER_IP = "192.168.110.71"
+PERIOD = 1
 
 with open(FILE_NAME, 'w') as file:
     print('rtt,send_time,ack_time', file=file)
 
 while True:
     send_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()
-    getsnmp(DEVICE_IP, "1.3.6.1.2.1.1.5.0")
+    getsnmp(RECEIVER_IP, "1.3.6.1.2.1.1.5.0")
     ack_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()
     with open(FILE_NAME, 'a') as file:
         print(f'{ack_time - send_time:.3f},{send_time:.3f},{ack_time:.3f}',file=file)
