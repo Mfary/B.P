@@ -33,14 +33,18 @@ def getsnmp(host, oid):
 FILE_NAME = "data_sender.csv"
 RECEIVER_IP = "192.168.110.71"
 PERIOD = 1
+COUNT = 1500
 
 with open(FILE_NAME, 'w') as file:
     print('rtt,send_time,ack_time', file=file)
 
-while True:
-    send_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()
-    getsnmp(RECEIVER_IP, "1.3.6.1.2.1.1.5.0")
-    ack_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()
-    with open(FILE_NAME, 'a') as file:
-        print(f'{ack_time - send_time:.3f},{send_time:.3f},{ack_time:.3f}',file=file)
-    time.sleep(PERIOD)
+try:
+    for sequence in range(COUNT):
+        send_time = datetime.now(timezone.utc).timestamp()
+        getsnmp(RECEIVER_IP, "1.3.6.1.2.1.1.5.0")
+        ack_time = datetime.now(timezone.utc).timestamp()
+        with open(FILE_NAME, 'a') as file:
+            print(f'{ack_time - send_time:.3f},{send_time:.3f},{ack_time:.3f}',file=file)
+        time.sleep(PERIOD)
+except KeyboardInterrupt:
+    print('### Stopping gracefully...')

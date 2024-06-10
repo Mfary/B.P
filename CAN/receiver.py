@@ -1,12 +1,12 @@
 import can
 from datetime import datetime, timezone
 
-FILE_NAME = "data_receiver_90.csv"
+FILE_NAME = "data_receiver.csv"
 
 def rcv(bus):
     while True:
         data = bus.recv()
-        receive_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()
+        receive_time = datetime.now(timezone.utc).timestamp()
         if data is None:
             continue
         (sender, seq, ack) = map(int, data.data.decode("ascii").split(","))

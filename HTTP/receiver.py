@@ -1,7 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from http import HTTPStatus
 from datetime import datetime, timezone
-from sys import getsizeof
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -19,18 +18,21 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(bytes(msg.encode()))
 
     def do_POST(self):
-        receive_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()
+        receive_time = datetime.now(timezone.utc).timestamp()
         content_length = int(self.headers.get('content-length', 0))
 
-        msg = self.rfile.read(content_length)
-        print(msg)
 
-        send_time = (float(msg.decode('ascii').split('#')[0]))
+        msg = self.rfile.read(content_length).decode('ascii')
+        (sender, seq, ack) = map(int, msg.split(","))
+        if (ack == 1):
+            return
+        print(msg)
+        print(f'### Received at {receive_time:.3f}')
 
         with open(FILE_NAME, 'a') as file:
-            print(f'{receive_time - send_time:.3f},{send_time:.3f},{receive_time:.3f},{getsizeof(msg)}',file=file)
+            print(f'{sender},{seq},{receive_time:.3f}',file=file)
 
-        self.respond()
+        self.respond(msg=f'{sender},{seq},1')
 
     def do_GET(self):
         self.respond(HTTPStatus.METHOD_NOT_ALLOWED, 'method not allowed!')
@@ -38,7 +40,7 @@ class Handler(BaseHTTPRequestHandler):
 FILE_NAME = "data_receiver.csv"
 
 with open(FILE_NAME, 'w') as file:
-    print('delay,send_time,receive_time,data_length',file=file)
+    print('sender_id,sequence,receive_time',file=file)
 
 try:
     my_server = HTTPServer(("0.0.0.0", 8000), Handler)

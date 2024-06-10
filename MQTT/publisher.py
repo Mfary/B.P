@@ -1,43 +1,54 @@
 import paho.mqtt.client as mqtt
-import time, random
-from string import ascii_uppercase
+import time
 from datetime import datetime, timezone
-from sys import getsizeof
 
 
 
-def on_message(client, userdata, msg):
-    print(msg)
+def on_message_recieve(client, userdata, msg):
+    data = msg.payload.decode('ascii')
+    ack_time = datetime.now(timezone.utc).timestamp()
+    if data is None:
+        return
+    (sender, seq, ack) = map(int, data.split(","))
+    if (sender == SENDER_ID and ack == 1):
+        with open(ACK_FILE_NAME, 'a') as file:
+            print(f'{sender},{seq},{ack_time:.3f}', file=file)
 
 
-MESSAGE_BROKER = "192.168.110.117"
-TOPIC = "topic"
-DATA_LENGTH = 1000
+SENDER_ID = 1
+MESSAGE_BROKER = "192.168.105.117"
+SENDER_TOPIC = "topic"
+RECEIVER_TOPIC = "res"
 PUBLISH_PERIOD = 1
-PREFIX_SIZE = getsizeof(bytes(f"{datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp():.3f}#", 'ascii'))
-FILE_NAME = "data_sender.csv"
+SENT_FILE_NAME = "data_sender_0.csv"
+ACK_FILE_NAME = "data_sender_ack_0.csv"
 QOS = 0
+COUNT = 1500
 
 client = mqtt.Client()
-client.on_message = on_message
+client.on_message = on_message_recieve
 client.connect(MESSAGE_BROKER, 1883, 60)
 
-with open(FILE_NAME, 'w') as file:
-    print('rtt,send_time,send_time,ack_time',file=file)
+with open(SENT_FILE_NAME, 'w') as file:
+    print('sender_id,sequence,rtt,send_time,ack_time',file=file)
+
+with open(ACK_FILE_NAME, 'w') as file:
+    print('sender_id,sequence,ack_time',file=file)
 
 try:
     client.loop_start()
-    while True:
-        N = DATA_LENGTH - PREFIX_SIZE
-        random_string = ''.join(random.choices(ascii_uppercase, k=N))
-        send_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()
-        client.publish(TOPIC, f"{send_time:.3f}#{random_string}", qos=QOS)
-        ack_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()
+    client.subscribe(RECEIVER_TOPIC)
+    for sequence in range(COUNT):
+        send_time = datetime.now(timezone.utc).timestamp()
+        client.publish(SENDER_TOPIC, f'{SENDER_ID},{sequence},0'.encode('ascii'), qos=QOS)
+        ack_time = datetime.now(timezone.utc).timestamp()
         print(f'published on: {send_time:.3f}')
-        with open(FILE_NAME, 'a') as file:
-            print(f'{ack_time-send_time:.3f},{send_time:.3f}, {ack_time:.3f}', file=file)
+        with open(SENT_FILE_NAME, 'a') as file:
+            print(f'{SENDER_ID},{sequence},{ack_time-send_time:.3f},{send_time:.3f},{ack_time:.3f}', file=file)
+        print(f'{SENDER_ID},{sequence},{ack_time-send_time:.3f},{send_time:.3f},{ack_time:.3f}')
         time.sleep(PUBLISH_PERIOD)
 except KeyboardInterrupt:
     print('### Stopping gracefully...')
+    time.sleep(5)
 client.loop_stop()
 client.disconnect()

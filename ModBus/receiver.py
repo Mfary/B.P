@@ -1,23 +1,36 @@
 from pyModbusTCP.server import ModbusServer, DataBank
+from pyModbusTCP.client import ModbusClient
 from datetime import datetime, timezone
-import os, struct
+import struct
 
 
 FILE_NAME = "data_recieiver.csv"
+SENDER_ADDRESS = {
+    1: "192.168.105.183"
+}
+
 
 class CustomDataBank(DataBank):
     def set_holding_registers(self, address, word_list, srv_info=None):
-        receive_time = datetime.now(timezone.utc).replace(tzinfo=timezone.utc).timestamp()
+        receive_time = datetime.now(timezone.utc).timestamp()
         print(f'### Received at {receive_time}')
-        
-        send_time = struct.unpack("d", bytes(word_list))[0]
+        print(address)
+        data = struct.unpack("8s", bytes(word_list))[0].decode('ascii')
+        print(data)
+        (sender, seq, ack) = map(int, data.split(","))
+        if (ack == 1):
+            return
+
+
+        client = ModbusClient(host=SENDER_ADDRESS[sender], port=502, timeout=5)
+        client.write_multiple_registers(0, struct.pack('8s', f'{sender},{seq:4d},1'.encode('ascii')))
         with open(FILE_NAME, 'a') as file:
-            print(f'{receive_time - send_time:.3f},{send_time:.3f},{receive_time:.3f}', file=file)
-        
+            print(f'{sender},{seq},{receive_time:.3f}', file=file)
+
         return super().set_holding_registers(address, word_list, srv_info)
 
 with open(FILE_NAME, 'w') as file:
-    print('delay,send_time,receive_time', file=file)
+    print('sender_id,sequence,receive_time', file=file)
 
 server = ModbusServer("0.0.0.0", 502, no_block=True, data_bank=CustomDataBank())
 server.start()
